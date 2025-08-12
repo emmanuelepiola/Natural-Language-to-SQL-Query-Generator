@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Film DB Interface</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 40px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #fafafa;
+    }
+    
+    .section h2 {
+      color: #34495e;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.4em;
+    }
+    
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+    
+    input[type="text"], textarea {
+      flex: 1;
+      min-width: 300px;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus, textarea:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    
+    select {
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      background-color: white;
+      cursor: pointer;
+    }
+    
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      transition: background-color 0.3s;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-secondary {
+      background-color: #95a5a6;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #7f8c8d;
+    }
+    
+    .btn-success {
+      background-color: #27ae60;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background-color: #219a52;
+    }
+    
+    #results {
+      border: 2px solid #e0e0e0;
+      padding: 20px;
+      min-height: 200px;
+      background-color: #fff;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    
+    .loading {
+      color: #3498db;
+      font-style: italic;
+    }
+    
+    .error {
+      color: #e74c3c;
+      background-color: #fdf2f2;
+      border-color: #e74c3c;
+    }
+    
+    .success {
+      color: #27ae60;
+      background-color: #f2fdf5;
+      border-color: #27ae60;
+    }
+    
+    .sql-preview {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #495057;
+    }
+    
+    .examples {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #e8f4fd;
+      border-radius: 6px;
+      border-left: 4px solid #3498db;
+    }
+    
+    .examples h4 {
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+    }
+    
+    .examples ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .examples li {
+      margin-bottom: 5px;
+      color: #34495e;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🎬 Film DB Interface</h1>
+
+    <div class="section">
+      <h2>🤖 Interroga il Database con Linguaggio Naturale</h2>
+      <div class="input-group">
+        <textarea id="llmQueryInput" placeholder="Fai una domanda in italiano, ad esempio: 'Quali film sono stati rilasciati nel 2020?' o 'Chi ha diretto il film Inception?'"></textarea>
+        <select id="modelSelect">
+          <option value="gemma3:1b-it-qat">Gemma 3 1B IT</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <button class="btn-primary" onclick="doLLMSearch()">🔍 Cerca con LLM</button>
+      </div>
+      
+      <div class="examples">
+        <h4>Esempi di domande:</h4>
+        <ul>
+          <li>"Elenca tutti i film"</li>
+          <li>"Mostrami i film del 2020"</li>
+          <li>"Quali registi hanno fatto più di un film?"</li>
+          <li>"Trova film del genere azione"</li>
+          <li>"Quali film sono disponibili su Netflix?"</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔍 Ricerca Tradizionale</h2>
+      <div class="input-group">
+        <input type="text" id="queryInput" placeholder="Query SQL o dati film (formato: titolo,regista,eta_autore,anno,genere,piattaforma_1,piattaforma_2)">
+      </div>
+      <div class="input-group">
+        <button class="btn-secondary" onclick="doSearch()">Cerca</button>
+        <button class="btn-success" onclick="doAdd()">Aggiungi Film</button>
+        <button class="btn-primary" onclick="getDbSchema()">📊 Schema Database</button>
+      </div>
+      
+      <div class="examples">
+        <h4>Esempi per aggiungere film:</h4>
+        <ul>
+          <li><strong>Formato:</strong> titolo,regista,eta_autore,anno,genere,piattaforma_1,piattaforma_2</li>
+          <li><strong>Esempio:</strong> Inception,Christopher Nolan,50,2010,Sci-Fi,Netflix,Amazon Prime</li>
+          <li><strong>Esempio:</strong> The Matrix,Lana Wachowski,55,1999,Action,HBO Max,Disney+</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="results">Risultati appariranno qui...</div>
+  </div>
+
+  <script>
+    async function doLLMSearch() {
+      const input = document.getElementById("llmQueryInput").value.trim();
+      const model = document.getElementById("modelSelect").value;
+      
+      if (!input) {
+        document.getElementById("results").innerHTML = "Per favore, inserisci una domanda.";
+        return;
+      }
+      
+      document.getElementById("results").innerHTML = '<div class="loading">🔄 Elaborando la richiesta con il LLM...</div>';
+      
+      try {
+        const response = await fetch("/api/llm_search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ 
+            question: input,
+            model: model
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displayLLMResults(data);
+      } catch (error) {
+        document.getElementById("results").innerHTML = `<div class="error">❌ Errore: ${error.message}</div>`;
+      }
+    }
+
+    function displayLLMResults(data) {
+      let html = "";
+      
+      if (data.sql_validation === "llm_error") {
+        html += `<div class="error">🤖❌ Errore LLM: Il modello di linguaggio non è riuscito a processare la domanda.</div>\n\n`;
+        html += `<strong>Dettagli errore:</strong>\n`;
+        html += `<div class="sql-preview">${data.sql}</div>\n`;
+        html += `<p><em>Suggerimento: Prova a riformulare la domanda o verifica che il servizio Ollama sia attivo.</em></p>`;
+      } else {
+        html += `<div class="success">✅ Query processata con successo!</div>\n\n`;
+        
+        html += `<strong>SQL generata:</strong>\n`;
+        html += `<div class="sql-preview">${data.sql}</div>\n`;
+        
+        html += `<strong>Stato validazione:</strong> ${getValidationStatusEmoji(data.sql_validation)} ${data.sql_validation}\n\n`;
+        
+        if (data.results && data.results.length > 0) {
+          html += `<strong>Risultati (${data.results.length}):</strong>\n`;
+          data.results.forEach((item, index) => {
+            html += `${index + 1}. ${item.item_type}: `;
+            item.properties.forEach(prop => {
+              html += `${prop.property_value} `;
+            });
+            html += `\n`;
+          });
+        } else if (data.sql_validation === "valid") {
+          html += `<strong>Risultati:</strong> Nessun risultato trovato.\n`;
+        } else {
+          html += `<strong>Errore:</strong> Query non valida o non sicura.\n`;
+        }
+      }
+      
+      document.getElementById("results").innerHTML = html;
+    }
+
+    function getValidationStatusEmoji(status) {
+      switch(status) {
+        case "valid": return "✅";
+        case "invalid": return "❌";
+        case "unsafe": return "⚠️";
+        case "llm_error": return "🤖❌";
+        default: return "❓";
+      }
+    }
+
+    async function doSearch() {
+      const input = document.getElementById("queryInput").value.trim();
+      
+      if (!input) {
+        document.getElementById("results").innerHTML = "Per favore, inserisci una query SQL.";
+        return;
+      }
+      
+      document.getElementById("results").innerHTML = '<div class="loading">🔄 Eseguendo query SQL...</div>';
+      
+      try {
+        const response = await fetch("/api/sql_search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ 
+            sql_query: input
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displaySqlResults(data);
+      } catch (error) {
+        document.getElementById("results").innerHTML = `<div class="error">❌ Errore: ${error.message}</div>`;
+      }
+    }
+
+    function displaySqlResults(data) {
+      let html = "";
+      
+      html += `<div class="success">🔍 Query SQL Eseguita</div>\n\n`;
+      
+      html += `<strong>Query SQL:</strong>\n`;
+      html += `<div class="sql-preview">${data.sql}</div>\n`;
+      
+      html += `<strong>Stato validazione:</strong> ${getValidationStatusEmoji(data.sql_validation)} ${data.sql_validation}\n\n`;
+      
+      if (data.results && data.results.length > 0) {
+        html += `<strong>Risultati (${data.results.length}):</strong>\n`;
+        data.results.forEach((item, index) => {
+          html += `${index + 1}. ${item.item_type}: `;
+          item.properties.forEach(prop => {
+            html += `${prop.property_value} `;
+          });
+          html += `\n`;
+        });
+      } else if (data.sql_validation === "valid") {
+        html += `<strong>Risultati:</strong> Nessun risultato trovato.\n`;
+      } else {
+        html += `<strong>Errore:</strong> Query non valida o non sicura.\n`;
+        if (data.sql_validation === "unsafe") {
+          html += `<em>La query contiene operazioni non consentite per motivi di sicurezza.</em>\n`;
+        } else if (data.sql_validation === "invalid") {
+          html += `<em>La query non è sintatticamente corretta o fa riferimento a tabelle inesistenti.</em>\n`;
+        }
+      }
+      
+      document.getElementById("results").innerHTML = html;
+    }
+
+    async function doAdd() {
+      const input = document.getElementById("queryInput").value;
+      
+      try {
+        const res = await fetch("/api/add_movie", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ data_line: input })
+        });
+
+        const json = await res.json();
+        document.getElementById("results").textContent = JSON.stringify(json, null, 2);
+      } catch (error) {
+        document.getElementById("results").innerHTML = `<div class="error">❌ Errore: ${error.message}</div>`;
+      }
+    }
+
+    async function getDbSchema() {
+      document.getElementById("results").innerHTML = '<div class="loading">📊 Caricamento schema del database...</div>';
+      
+      try {
+        const res = await fetch("/api/schema");
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const schemaData = await res.json();
+        displaySchemaResults(schemaData);
+      } catch (error) {
+        document.getElementById("results").innerHTML = `<div class="error">❌ Errore nel caricamento dello schema: ${error.message}</div>`;
+      }
+    }
+
+    function displaySchemaResults(schemaData) {
+      let html = `<div class="success">📊 Schema del Database</div>\n\n`;
+      
+      const tableGroups = {};
+      schemaData.forEach(item => {
+        if (!tableGroups[item.table_name]) {
+          tableGroups[item.table_name] = [];
+        }
+        tableGroups[item.table_name].push(item.table_column);
+      });
+      
+      // Display each table and its columns
+      Object.keys(tableGroups).forEach(tableName => {
+        html += `<strong>📋 Tabella: ${tableName}</strong>\n`;
+        html += `<div class="sql-preview">`;
+        tableGroups[tableName].forEach(column => {
+          html += `• ${column}\n`;
+        });
+        html += `</div>\n`;
+      });
+      
+      html += `\n<em>💡 Usa queste informazioni per costruire le tue query SQL o fare domande al LLM.</em>`;
+      
+      document.getElementById("results").innerHTML = html;
+    }
+
+    // Add keyboard shortcuts
+    document.getElementById("llmQueryInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        doLLMSearch();
+      }
+    });
+
+    document.getElementById("queryInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        doSearch();
+      }
+    });
+  </script>
+
+</body>
+</html>
+
